@@ -12,59 +12,67 @@ import base64
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-app.config['SECRET_KEY'] = 'youkneverknoww'
+app.config['SECRET_KEY'] = 'dit is None of you r Bus'
 
+def get_frame_overview(ch, setups=None):
+    if not setups:
+        setups = germix_fastai_webapp.logic_setups_only(f'{app.static_folder}/{ch}')
+    imgs = sorted([f for f in os.listdir(f'{app.static_folder}/{ch}') if f[-4:] == '.jpg'])
+    img = f'{app.static_folder}/{ch}/{imgs[0]}'
+    img_io = BytesIO()
+    imgpass = Image.open(img)
+    f = 1
+    for s in setups:
+        (y, x) = (round(s[0]+(s[1]-s[0])/2), round(s[2]+(s[3]-s[2])/2))
+        draw = ImageDraw.Draw(imgpass)
+        font = ImageFont.truetype(f'{app.static_folder}/Roboto-Bold.ttf', size=250)
+        draw.text((x, y), str(f), fill= 'rgb(255, 255, 255)', font=font)
+        f += 1
+    imgpass.save(img_io, format='PNG')
+    img_io.seek(0)
+    return urllib.parse.quote(base64.b64encode(img_io.read()).decode()), len(imgs)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/select')
 def select():
-    text = ['Preview shows last picture of Image Stack', 'Or go directly to Processing with Process']
+    text = ['Loading an Image stack may take a few seconds']
     form = SelectForm()
     if form.validate_on_submit():
         session['ch'] = form.choice.data
-        if form.prev.data:
-            return redirect(url_for('confirm'))
-        if form.proc.data:
-            return redirect(url_for('results'))
+        return redirect(url_for('confirm'))
     return render_template('select.html', title='Germix Selection Menu', form=form, text=text)
 
 @app.route('/confirm', methods=['GET', 'POST'])
 def confirm():
     form = ConfirmForm()
     ch = session['ch']
-    imgs = sorted([f for f in os.listdir(f'{app.static_folder}/{ch}') if f[-4:] == '.jpg'])
-    img = url_for('static', filename=f'{ch}/{imgs[-5]}')
-    text = [f'ImageStack {ch} selected', f'Processing may take up to {int(np.round(len(imgs)*2/60))} minutes per frame']
+    #If I don't put following code in if-statement, it runs again when redirecting, why?
+    if ch:
+        frame_overview, len_imgs = get_frame_overview(ch)
+        text = [f'ImageStack {ch} selected', f'Processing may take up to {int(np.round(len_imgs)*2/60)} minutes per frame']
     if form.validate_on_submit():
         if form.change.data:
             return redirect(url_for('select'))
         if form.proc.data:
+            session['frame'] = form.frame.data
             return redirect(url_for('results'))
-    return render_template('confirm.html', title='Confirm Choice', img=img, form=form, text=text)
+    return render_template('confirm.html', title='Confirm Choice', frame_overview=frame_overview, form=form, text=text)
 
 @app.route('/results', methods=['GET', 'POST'])
 def results():
+    frame = session.pop('frame', 'All')
+    if frame == 'All':
+        begin_frame = int(0)
+        end_frame = int(6)
+    else:
+        end_frame = int(frame)
+        begin_frame = int(frame) - 1
     ch = session.pop('ch', None)
     plot_data = []
     if ch:
-        results, setups = germix_fastai_webapp.logic(f'{app.static_folder}/{ch}', show=False)
-        imgs = sorted([f for f in os.listdir(f'{app.static_folder}/{ch}') if f[-4:] == '.jpg'])
-        #img = url_for('static', filename=f'{ch}/{imgs[-5]}')
-        img = f'{app.static_folder}/{ch}/{imgs[0]}'
-        img_io = BytesIO()
-        imgpass = Image.open(img)
-        f = 1
-        for s in setups:
-            (y, x) = (round(s[0]+(s[1]-s[0])/2), round(s[2]+(s[3]-s[2])/2))
-            draw = ImageDraw.Draw(imgpass)
-            font = ImageFont.truetype(f'{app.static_folder}/Roboto-Bold.ttf', size=250)
-            draw.text((x, y), str(f), fill= 'rgb(255, 255, 255)', font=font)
-            f += 1
-        imgpass.save(img_io, format='PNG')
-        img_io.seek(0)
-        frame_overview = urllib.parse.quote(base64.b64encode(img_io.read()).decode())
-
-        for j in range(0, 6):
+        results, setups = germix_fastai_webapp.logic(f'{app.static_folder}/{ch}', interval=1, begin_frame=begin_frame, end_frame=end_frame, show=False)
+        frame_overview, _ = get_frame_overview(ch, setups=setups)
+        for j in range(begin_frame, end_frame):
             img = BytesIO()
             fig, ax = plt.subplots()
             ax.plot(list(results[j].keys()), list(results[j].values()))

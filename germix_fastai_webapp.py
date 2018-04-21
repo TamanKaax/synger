@@ -223,13 +223,13 @@ def predict(learner, seeds, seeds_indexes):
     seeds_indexes = [int(f[-6:-4].strip('/')) for f in data.test_ds.fnames]
     return np.argmax(learner.predict(is_test=True), axis=1), seeds_indexes
 
-def logic(dir_path, interval=1, show=True):
+def logic(dir_path, interval=1, begin_frame=0, end_frame=6, show=True):
     imgs = sorted(glob.glob(f'{dir_path}/*.jpg'))
     init_img = imgs[0]
     learner = load_model()
     setups = find_setups(init_img)
     results = {}
-    for f in range(0, 6):
+    for f in range(begin_frame, end_frame):
         frame = setups[f]
         results[f] = {}
         tracking_library = initialize_set(init_img, frame)
@@ -259,12 +259,18 @@ def logic(dir_path, interval=1, show=True):
                             draw_circle(img_out, tracking_library[s2]['ext_slice'])
                         tracking_library[s2]['status'] = 1
                         germinated += 1
-            results[f][int(im[-8:-4])] = germinated
+            results[begin_frame][int(im[-8:-4])] = germinated
             if show:
                 fig, ax = plt.subplots(figsize=(8,8))
                 ax.imshow(img_out)
                 plt.show()
     return results, setups
 
+def logic_setups_only(dir_path):
+    imgs = sorted(glob.glob(f'{dir_path}/*.jpg'))
+    init_img = imgs[0]
+    setups = find_setups(init_img)
+    return setups
+
 if __name__ == '__main__':
-    logic('/home/taman/data/Germix/Tomato/tom2/', interval=1, show=True)
+    logic('/home/taman/data/Germix/Tomato/tom2/', interval=1, f=6, show=True)

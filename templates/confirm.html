@@ -4,8 +4,11 @@
 
   <form action="" method="post">
     {{form.hidden_tag()}}
-    <h3>Last image of image stack</h3>
-     <img src="{{img}}" width=360 height=270>
+    <h3>Last image of image stack with frame detection</h3>
+     <img src="data:image/png;base64, {{ frame_overview }}" width = "360" height = "270">
+    <hr>
+    <h3>{{form.frame.label}}</h3>
+    {{form.frame}}
     <hr>
     <p>
       {{form.change}}
