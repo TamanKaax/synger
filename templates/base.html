@@ -1,0 +1,20 @@
+<html>
+    <head>
+      {% if title %}
+      <title>{{ title }} - Germix WebApp</title>
+      {% else %}
+      <title>Welcome to Germix webapp</title>
+      {% endif %}
+    </head>
+    <body>
+      <h2>Germix WebApp</h2>
+      {% if text %}
+      {% for t in text %}
+      <li><span style='color:green;'>{{t}}</span></li>
+      {% endfor %}
+      {%endif%}
+      <hr>
+        {% block content %}
+        {% endblock %}
+    </body>
+</html>

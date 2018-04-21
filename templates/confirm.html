@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  <form action="" method="post">
+    {{form.hidden_tag()}}
+    <h3>Last image of image stack</h3>
+     <img src="{{img}}" width=360 height=270>
+    <hr>
+    <p>
+      {{form.change}}
+      {{form.proc}}
+    </p>
+  </form>
+
+{% endblock %}

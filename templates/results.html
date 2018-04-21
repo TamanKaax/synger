@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  <p>
+    <h3>Frame overview</h3>
+    <img src="data:image/png;base64, {{ frame_overview }}" width = "360" height = "270">
+    <h3>Germination graphs</h3>
+    {% for img in plot_url %}
+    <img src="data:image/png;base64, {{ img }}" width="400" height="300" alt="graph">
+    {% endfor %}
+  </p>
+  <form action="" method="post">
+    {{form.hidden_tag()}}
+    <p>
+      <hr>
+      {{form.export}}{{form.other}}
+    </p>
+  </form>
+
+{% endblock %}
